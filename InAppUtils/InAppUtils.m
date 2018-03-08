@@ -79,6 +79,9 @@ RCT_EXPORT_METHOD(getPendingPurchases:(RCTResponseSenderBlock)callback)
 {
     NSMutableArray *transactionsArrayForJS = [NSMutableArray array];
     for (SKPaymentTransaction *transaction in [SKPaymentQueue defaultQueue].transactions) {
+        if (transaction.transactionState == SKPaymentTransactionStatePurchasing || transaction.transactionState == SKPaymentTransactionStateDeferred) {
+            return;
+        }
         NSMutableDictionary *purchase = [NSMutableDictionary dictionaryWithDictionary: @{
                                                                                          @"transactionDate": @(transaction.transactionDate.timeIntervalSince1970 * 1000),
                                                                                          @"transactionIdentifier": transaction.transactionIdentifier,
