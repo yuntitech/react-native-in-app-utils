@@ -51,12 +51,12 @@ RCT_EXPORT_MODULE()
                 NSString *key = RCTKeyForInstance(transaction.payment.productIdentifier);
                 RCTResponseSenderBlock callback = _callbacks[key];
                 if (callback) {
-                    NSDictionary *purchase = @{
+                    NSMutableDictionary *purchase = [NSMutableDictionary dictionaryWithDictionary: @{
                                               @"transactionDate": @(transaction.transactionDate.timeIntervalSince1970 * 1000),
                                               @"transactionIdentifier": transaction.transactionIdentifier,
                                               @"productIdentifier": transaction.payment.productIdentifier,
-                                              @"transactionReceipt": [[transaction transactionReceipt] base64EncodedStringWithOptions:0]
-                                              };
+                                              }];
+                    [self appendReceiptToDictionary: purchase];
                     callback(@[[NSNull null], purchase]);
                     [_callbacks removeObjectForKey:key];
                 } else {
@@ -90,9 +90,9 @@ RCT_EXPORT_METHOD(getPendingPurchases:(RCTResponseSenderBlock)callback)
                                                                                          @"transactionDate": @(transaction.transactionDate.timeIntervalSince1970 * 1000),
                                                                                          @"transactionIdentifier": transaction.transactionIdentifier,
                                                                                          @"productIdentifier": transaction.payment.productIdentifier,
-                                                                                         @"transactionReceipt": [[transaction transactionReceipt] base64EncodedStringWithOptions:0],
                                                                                          @"transactionState": StringForTransactionState(transaction.transactionState)
                                                                                          }];
+        [self appendReceiptToDictionary: purchase];
         SKPaymentTransaction *originalTransaction = transaction.originalTransaction;
         if (originalTransaction) {
             purchase[@"originalTransactionDate"] = @(originalTransaction.transactionDate.timeIntervalSince1970 * 1000);
@@ -115,6 +115,19 @@ RCT_EXPORT_METHOD(purchaseProduct:(NSString *)productIdentifier
                   callback:(RCTResponseSenderBlock)callback)
 {
     [self doPurchaseProduct:productIdentifier username:nil callback:callback];
+}
+
+
+- (void)appendReceiptToDictionary: (NSMutableDictionary *)dict {
+    //        1. [transaction transactionReceipt]获取到的结果可能为空, 只有在state == .purchased才有效,
+    //        2. [transaction transactionReceipt]在iOS 7.0后已经过期, 使用下面 [NSData dataWithContentsOfURL: [[NSBundle mainBundle] appStoreReceiptURL]]
+    //        3. [transaction transactionReceipt] 和 [NSData dataWithContentsOfURL: [[NSBundle mainBundle] appStoreReceiptURL]]返回的 json 格式不一样
+    NSURL *receiptURL = [[NSBundle mainBundle] appStoreReceiptURL];
+    NSData *receiptdata = [NSData dataWithContentsOfURL: receiptURL];
+    NSString *transactionReceiptStr = [receiptdata base64EncodedStringWithOptions:0];
+    if (transactionReceiptStr) {
+        dict[@"transactionReceipt"] = transactionReceiptStr;
+    }
 }
 
 - (void) doPurchaseProduct:(NSString *)productIdentifier
@@ -195,9 +208,9 @@ restoreCompletedTransactionsFailedWithError:(NSError *)error
                     @"transactionDate": @(transaction.transactionDate.timeIntervalSince1970 * 1000),
                     @"transactionIdentifier": transaction.transactionIdentifier,
                     @"productIdentifier": transaction.payment.productIdentifier,
-                    @"transactionReceipt": [[transaction transactionReceipt] base64EncodedStringWithOptions:0]
                 }];
 
+                [self appendReceiptToDictionary: purchase];
                 SKPaymentTransaction *originalTransaction = transaction.originalTransaction;
                 if (originalTransaction) {
                     purchase[@"originalTransactionDate"] = @(originalTransaction.transactionDate.timeIntervalSince1970 * 1000);
