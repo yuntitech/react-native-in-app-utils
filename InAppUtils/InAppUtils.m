@@ -288,13 +288,26 @@ RCT_EXPORT_METHOD(receiptData:(RCTResponseSenderBlock)callback)
         products = [NSMutableArray arrayWithArray:response.products];
         NSMutableArray *productsArrayForJS = [NSMutableArray array];
         for(SKProduct *item in response.products) {
+            // FIX: https://bugly.qq.com/v2/crash-reporting/crashes/b7588917d3/52028?pid=2
+            NSString *countryCode = [item.priceLocale objectForKey: NSLocaleCountryCode];
+            if (!countryCode) {
+                countryCode = @"zh_CN";
+            }
+            NSString *currencySymbol = [item.priceLocale objectForKey:NSLocaleCurrencySymbol];
+            if (!currencySymbol) {
+                currencySymbol = @"¥";
+            }
+            NSString *currencyCode = [item.priceLocale objectForKey:NSLocaleCurrencyCode];
+            if (!currencyCode) {
+                currencyCode = @"CNY";
+            }
             NSDictionary *product = @{
                                       @"identifier": item.productIdentifier,
                                       @"price": item.price,
-                                      @"currencySymbol": [item.priceLocale objectForKey:NSLocaleCurrencySymbol],
-                                      @"currencyCode": [item.priceLocale objectForKey:NSLocaleCurrencyCode],
+                                      @"currencySymbol": currencySymbol,
+                                      @"currencyCode": currencyCode,
                                       @"priceString": item.priceString,
-                                      @"countryCode": [item.priceLocale objectForKey: NSLocaleCountryCode],
+                                      @"countryCode": countryCode,
                                       @"downloadable": item.isDownloadable ? @"true" : @"false" ,
                                       @"description": item.localizedDescription ? item.localizedDescription : @"",
                                       @"title": item.localizedTitle ? item.localizedTitle : @"",
