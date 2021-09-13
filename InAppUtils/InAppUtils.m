@@ -291,7 +291,7 @@ RCT_EXPORT_METHOD(receiptData:(RCTResponseSenderBlock)callback)
             // FIX: https://bugly.qq.com/v2/crash-reporting/crashes/b7588917d3/52028?pid=2
             NSString *countryCode = [item.priceLocale objectForKey: NSLocaleCountryCode];
             if (!countryCode) {
-                countryCode = @"zh_CN";
+                countryCode = @"CN";
             }
             NSString *currencySymbol = [item.priceLocale objectForKey:NSLocaleCurrencySymbol];
             if (!currencySymbol) {
